@@ -1,10 +1,11 @@
-package uzumtech.notification.sender;
+package uzumtech.notification.service.sender;
 
 import uzumtech.notification.constant.enums.NotificationType;
 import uzumtech.notification.dto.NotificationSendRequestDto;
 import uzumtech.notification.dto.NotificationSendResponseDto;
+import uzumtech.notification.dto.ResponseDto;
 
 public interface NotificationSender {
-    NotificationSendResponseDto sendNotification(NotificationSendRequestDto notification);
+    ResponseDto<NotificationSendResponseDto> sendNotification(NotificationSendRequestDto notification);
     NotificationType getNotificationType();
 }

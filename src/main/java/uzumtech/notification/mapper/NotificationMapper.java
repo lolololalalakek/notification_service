@@ -18,32 +18,13 @@ public interface NotificationMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(source = "merchantId", target = "merchant", qualifiedByName = "merchantFromId")
-    @Mapping(source = "receiver", target = "receiverInfo", qualifiedByName = "receiverToString")
+    @Mapping(source = "receiver", target = "receiverInfo")
     Notification toEntity(NotificationSendRequestDto dto, @Context MerchantRepository merchantRepository);
 
     @Named("merchantFromId")
-    default Merchant mapMerchant(Long merchantId, @Context MerchantRepository   merchantRepository) {
+    default Merchant mapMerchant(Long merchantId, @Context MerchantRepository merchantRepository) {
         return merchantRepository.findById(merchantId)
             .orElseThrow(() -> new IllegalArgumentException("Merchant not found: " + merchantId));
-    }
-
-    @Named("receiverToString")
-    default String receiverToString(NotificationSendRequestDto.Receiver receiver) {
-        if (receiver == null) {
-            return null;
-        }
-
-        if (receiver.getPhone() != null && !receiver.getPhone().isBlank()) {
-            return receiver.getPhone();
-        }
-        if (receiver.getEmail() != null && !receiver.getEmail().isBlank()) {
-            return receiver.getEmail();
-        }
-        if (receiver.getFirebaseTokens() != null && !receiver.getFirebaseTokens().isEmpty()) {
-            return Strings.join(receiver.getFirebaseTokens(), ',');
-        }
-
-        return null; // in case all are empty
     }
 
 }
