@@ -34,7 +34,7 @@ public class Notification {
     private Merchant merchant;
 
     @Column(nullable = false)
-    private String recieverInfo;
+    private String receiverInfo;
 
     @Column(nullable = false,updatable = false)
     @CreationTimestamp
@@ -44,4 +44,14 @@ public class Notification {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+
+    // ✅ Исправленный метод
+    public String getRecipient() {
+        return receiverInfo;
+    }
+
+    // ✅ Возвращаем ID связанного Merchant
+    public Long getMerchantId() {
+        return merchant != null ? merchant.getId() : null;
+    }
 }
