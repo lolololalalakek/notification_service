@@ -1,22 +1,24 @@
-package uzumtech.notification.sender;
+package uzumtech.notification.service.sender;
 
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
-import com.google.firebase.messaging.MulticastMessage;
-import com.google.firebase.messaging.SendResponse;
+import com.google.firebase.messaging.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import uzumtech.notification.constant.enums.NotificationStatus;
 import uzumtech.notification.constant.enums.NotificationType;
 import uzumtech.notification.dto.NotificationSendRequestDto;
 import uzumtech.notification.dto.NotificationSendResponseDto;
+import uzumtech.notification.dto.PushResult;
+import uzumtech.notification.dto.ResponseDto;
 import uzumtech.notification.entity.Notification;
 import uzumtech.notification.mapper.NotificationMapper;
 import uzumtech.notification.repository.MerchantRepository;
 import uzumtech.notification.repository.NotificationRepository;
 
-import java.util.List;
 
 @Slf4j
 @Service
@@ -29,12 +31,23 @@ public class PushNotificationSender implements NotificationSender {
     private final FirebaseMessaging firebaseMessaging;
 
     @Override
-    public NotificationSendResponseDto sendNotification(NotificationSendRequestDto notification) {
+    @Transactional
+    public ResponseDto<NotificationSendResponseDto> sendNotification(NotificationSendRequestDto notificationDto) {
         Notification entity = notificationMapper.toEntity(
-            notification, merchantRepository);
+            notificationDto, merchantRepository);
 
+        var result = sendPush(notificationDto);
 
+        entity.setStatus(result.getStatus());
+        entity.setMessage(result.getMessage());
 
+        var savedNotification = notificationRepository.save(entity);
+        if (result.isSuccess()) {
+            return ResponseDto.createSuccessResponse(
+                new NotificationSendResponseDto(savedNotification.getId())
+            );
+        }
+        return ResponseDto.createErrorResponse(result.getMessage());
     }
 
     @Override
@@ -42,32 +55,26 @@ public class PushNotificationSender implements NotificationSender {
         return NotificationType.PUSH;
     }
 
-    private void sendPush(NotificationSendRequestDto notificationDto) {
+    private PushResult sendPush(NotificationSendRequestDto notificationDto) {
         try {
-            MulticastMessage message = MulticastMessage.builder()
+            Message message = Message.builder()
                 .setNotification(com.google.firebase.messaging.Notification.builder()
                     .setTitle(notificationDto.getTitle())
                     .setBody(notificationDto.getBody())
                     .build())
-                .addAllTokens(notificationDto.getReceiver().getFirebaseTokens())
+                .setToken(notificationDto.getReceiver())
                 .build();
 
-            BatchResponse response = firebaseMessaging.sendEachForMulticast(message);
-            List<SendResponse> responses = response.getResponses();
+            var response = firebaseMessaging.send(message);
 
-            for (int i = 0; i < responses.size(); i++) {
-                if (!responses.get(i).isSuccessful()) {
-                    log.error("Failed to send to token {}: {}", notificationDto.getReceiver().getFirebaseTokens().get(i),
-                        responses.get(i).getException().getMessage());
-                }
-            }
-            log.info("Firebase notification sent to {} devices, {} succeeded, {} failed",
-                notificationDto.getReceiver().getFirebaseTokens().size(),
-                response.getSuccessCount(),
-                response.getFailureCount()
+            log.info("Firebase notification sent to {} device",
+                notificationDto.getReceiver()
             );
+
+            return new PushResult(NotificationStatus.SENT, response, true);
         } catch (FirebaseMessagingException e) {
             log.error("Firebase notification multicast sending error: {}", e.getMessage(), e);
+            return new PushResult(NotificationStatus.FAILED, e.getMessage(), false);
         }
     }
 }

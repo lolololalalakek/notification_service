@@ -5,10 +5,18 @@ spring:
     password: password
     driver-class-name: org.postgresql.Driver
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+    topic:
+      notification: notification-topic
+
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
 
 openapi:
   title: notification

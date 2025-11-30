@@ -46,6 +46,8 @@ public class Notification {
     @Column(nullable = false)
     private String receiverInfo;
 
+    private String message;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
