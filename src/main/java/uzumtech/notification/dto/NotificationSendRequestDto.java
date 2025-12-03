@@ -1,4 +1,4 @@
-package uzumtech.notification.dto.push;
+package uzumtech.notification.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -30,13 +30,4 @@ public class NotificationSendRequestDto {
 
     @NotBlank(message = "Receiver is required")
     private String receiver;
-
-    @NotNull(message = "Price is required")
-    private Long price;
-
-    public NotificationSendRequestDto(String merchant1, String testMessage, String email) {
-        this.receiver = merchant1;
-        this.body = testMessage;
-        this.type = NotificationType.valueOf(email);
-    }
 }
